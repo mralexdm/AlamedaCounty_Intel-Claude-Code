@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NextKey — Alameda County Motivated Seller Leads</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111c30; --panel2:#16233c; --line:#22324f;
+    --txt:#e8eefb; --muted:#93a4c4; --accent:#5b8cff; --gold:#ffce5b;
+    --hot:#ff5b6e; --warm:#ff9f43; --cool:#39c46e;
+    --chip:#1d2b46;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0a0f1c,#0b1220);color:var(--txt);
+       font:14px/1.5 -apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{padding:22px 26px;border-bottom:1px solid var(--line);
+         display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+  h1{font-size:18px;margin:0;letter-spacing:.3px}
+  h1 .pin{color:var(--gold)}
+  .meta{color:var(--muted);font-size:12.5px}
+  .wrap{padding:20px 26px;max-width:1500px;margin:0 auto}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .card .n{font-size:26px;font-weight:700}
+  .card .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+  input,select,button{background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+       border-radius:10px;padding:9px 12px;font-size:13px;outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  input[type=range]{padding:0}
+  button{cursor:pointer;font-weight:600}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{filter:brightness(1.08)}
+  .grow{flex:1 1 240px}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);
+        border-radius:14px;overflow:hidden}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{position:sticky;top:0;background:var(--panel2);font-size:11.5px;text-transform:uppercase;
+     letter-spacing:.5px;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap}
+  th .ar{opacity:.5;font-size:10px}
+  tr:hover td{background:#13203a}
+  .score{display:inline-block;min-width:38px;text-align:center;font-weight:800;
+         padding:4px 8px;border-radius:9px;color:#0b1220}
+  .s-hot{background:var(--hot);color:#fff}
+  .s-warm{background:var(--warm)}
+  .s-cool{background:var(--cool)}
+  .s-low{background:#3a4a6b;color:#cfe}
+  .chips{display:flex;flex-wrap:wrap;gap:4px}
+  .chip{background:var(--chip);border:1px solid var(--line);color:#cdd9f3;
+        font-size:11px;padding:2px 7px;border-radius:20px;white-space:nowrap}
+  .chip.fc{border-color:#7a3b46;color:#ffd2d8}
+  .chip.lp{border-color:#3b5b7a;color:#cfe3ff}
+  .muted{color:var(--muted)}
+  .addr{font-size:12.5px}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted)}
+  footer{padding:18px 26px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+  @media(max-width:760px){ th.hide,td.hide{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1><span class="pin">◆</span> NextKey — Alameda County Motivated Seller Leads</h1>
+    <div class="meta" id="meta">Loading…</div>
+  </div>
+  <div class="meta" id="src"></div>
+</header>
+
+<div class="wrap">
+  <div class="cards" id="cards"></div>
+
+  <div class="controls">
+    <input class="grow" id="q" placeholder="Search owner, address, doc #, legal…" />
+    <select id="cat"><option value="">All lead types</option></select>
+    <label class="muted">Min score <b id="msLabel">0</b>
+      <input type="range" id="ms" min="0" max="100" value="0" step="5" />
+    </label>
+    <button class="primary" id="csv">⬇ Export GHL CSV</button>
+  </div>
+
+  <div id="tableHost"></div>
+</div>
+
+<footer id="foot"></footer>
+
+<script>
+const GHL_COLUMNS = ["First Name","Last Name","Mailing Address","Mailing City",
+  "Mailing State","Mailing Zip","Property Address","Property City","Property State",
+  "Property Zip","Lead Type","Document Type","Date Filed","Document Number",
+  "Amount/Debt Owed","Seller Score","Motivated Seller Flags","Source","Public Records URL"];
+
+let DATA = {records:[]}, SORT = {key:"score", dir:-1};
+
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>(
+  {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function scoreClass(s){ return s>=80?"s-hot":s>=60?"s-warm":s>=45?"s-cool":"s-low"; }
+function money(a){ return (a==null||a==="")?"":"$"+Number(a).toLocaleString(undefined,{maximumFractionDigits:0}); }
+// Strict corp detector — matches the scraper's is_corp_entity (excludes TR/TRUST/ESTATE).
+function isEntity(n){ return /\b(LLC|INC|CORP|COMPANY|CO|LP|LLP|LTD|BANK|N\.A|ASSN|ASSOCIATION|PARTNERS|HOLDINGS|PROPERTIES|INVESTMENT|FUND|GROUP|CAPITAL|REALTY|HOMES|MFG|DEVELOPMENT|MANAGEMENT|SERVICES|VENTURES|ENTERPRISES)\b/i.test(n||""); }
+function splitName(o){
+  o=(o||"").trim(); if(!o) return ["",""];
+  if(isEntity(o)) return ["",o];
+  if(o.includes(",")){ const [l,f]=o.split(","); return [f.trim(),l.trim()]; }
+  const p=o.split(/\s+/); if(p.length===1) return ["",p[0]];
+  return [p[0], p.slice(1).join(" ")];
+}
+
+function chipClass(f){
+  if(/foreclosure/i.test(f)) return "chip fc";
+  if(/lis pendens/i.test(f)) return "chip lp";
+  return "chip";
+}
+
+function load(){
+  fetch("records.json?_="+Date.now()).then(r=>r.json()).then(d=>{
+    DATA=d||{records:[]};
+    const dr=DATA.date_range||{};
+    $("#meta").innerHTML = DATA.fetched_at
+      ? `Updated ${new Date(DATA.fetched_at).toLocaleString()} · window ${esc(dr.from)} → ${esc(dr.to)}`
+      : "No data yet — run the scraper.";
+    $("#src").textContent = DATA.source||"";
+    buildCats(); buildCards(); render();
+  }).catch(e=>{
+    $("#meta").textContent="Could not load records.json";
+    $("#tableHost").innerHTML=`<div class="empty">⚠ ${esc(e.message)}</div>`;
+  });
+}
+
+function buildCats(){
+  const set=[...new Set((DATA.records||[]).map(r=>r.cat_label||r.cat).filter(Boolean))].sort();
+  $("#cat").innerHTML='<option value="">All lead types</option>'+
+    set.map(c=>`<option>${esc(c)}</option>`).join("");
+}
+
+function buildCards(){
+  const r=DATA.records||[];
+  const wa=r.filter(x=>x.prop_address||x.mail_address).length;
+  const avg=r.length?Math.round(r.reduce((a,x)=>a+(x.score||0),0)/r.length):0;
+  const hot=r.filter(x=>(x.score||0)>=80).length;
+  const cards=[["Total leads",r.length],["With address",wa],["Avg score",avg],
+               ["🔥 Hot (80+)",hot]];
+  $("#cards").innerHTML=cards.map(([l,n])=>
+    `<div class="card"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+}
+
+function filtered(){
+  let r=[...(DATA.records||[])];
+  const q=$("#q").value.trim().toLowerCase();
+  const cat=$("#cat").value, ms=+$("#ms").value;
+  if(q) r=r.filter(x=>[x.owner,x.grantee,x.prop_address,x.mail_address,x.doc_num,
+      x.legal,x.cat_label,(x.flags||[]).join(" ")].join(" ").toLowerCase().includes(q));
+  if(cat) r=r.filter(x=>(x.cat_label||x.cat)===cat);
+  if(ms) r=r.filter(x=>(x.score||0)>=ms);
+  const k=SORT.key,d=SORT.dir;
+  r.sort((a,b)=>{
+    let va=a[k],vb=b[k];
+    if(k==="amount"||k==="score"){va=+va||0;vb=+vb||0;return (va-vb)*d;}
+    return String(va||"").localeCompare(String(vb||""))*d;
+  });
+  return r;
+}
+
+const COLS=[
+  ["score","Score",""],["cat_label","Lead Type",""],["owner","Owner (Grantor)",""],
+  ["prop_address","Property Address",""],["mail_address","Mailing Address","hide"],
+  ["filed","Filed",""],["doc_num","Doc #","hide"],["amount","Amount",""],
+  ["flags","Flags","hide"],["clerk_url","Link",""]];
+
+function render(){
+  const r=filtered();
+  if(!r.length){ $("#tableHost").innerHTML=
+    `<div class="empty">No leads match your filters.</div>`;
+    $("#foot").textContent=`0 of ${(DATA.records||[]).length} shown`; return; }
+  const head="<tr>"+COLS.map(([k,l,c])=>{
+    const ar=SORT.key===k?`<span class="ar">${SORT.dir<0?"▼":"▲"}</span>`:"";
+    return `<th class="${c}" data-k="${k}">${l} ${ar}</th>`;}).join("")+"</tr>";
+  const body=r.map(x=>{
+    const flags=(x.flags||[]).map(f=>`<span class="${chipClass(f)}">${esc(f)}</span>`).join("");
+    const prop=[x.prop_address,[x.prop_city,x.prop_state,x.prop_zip].filter(Boolean).join(" ")]
+      .filter(Boolean).join("<br>");
+    const mail=[x.mail_address,[x.mail_city,x.mail_state,x.mail_zip].filter(Boolean).join(" ")]
+      .filter(Boolean).join("<br>");
+    const link=x.clerk_url?`<a href="${esc(x.clerk_url)}" target="_blank" rel="noopener">open ↗</a>`:"";
+    return `<tr>
+      <td><span class="score ${scoreClass(x.score||0)}">${x.score||0}</span></td>
+      <td>${esc(x.cat_label||x.cat||"")}</td>
+      <td>${esc(x.owner||"")}${isEntity(x.owner)?' <span class="chip">corp</span>':""}</td>
+      <td class="addr">${prop||'<span class="muted">—</span>'}</td>
+      <td class="addr hide">${mail||'<span class="muted">—</span>'}</td>
+      <td class="num">${esc(x.filed||"")}</td>
+      <td class="num hide">${esc(x.doc_num||"")}</td>
+      <td class="num">${money(x.amount)}</td>
+      <td class="hide"><div class="chips">${flags}</div></td>
+      <td>${link}</td></tr>`;
+  }).join("");
+  $("#tableHost").innerHTML=`<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  $("#foot").textContent=`${r.length} of ${(DATA.records||[]).length} shown · sorted by ${SORT.key}`;
+  document.querySelectorAll("th[data-k]").forEach(th=>th.onclick=()=>{
+    const k=th.dataset.k;
+    SORT = SORT.key===k?{key:k,dir:-SORT.dir}:{key:k,dir:(k==="score"||k==="amount")?-1:1};
+    render();
+  });
+}
+
+function toCSV(){
+  const rows=filtered().map(x=>{
+    const [fn,ln]=splitName(x.owner);
+    return [fn,ln,x.mail_address,x.mail_city,x.mail_state,x.mail_zip,
+      x.prop_address,x.prop_city,x.prop_state,x.prop_zip,
+      x.cat_label||x.cat,x.doc_type,x.filed,x.doc_num,
+      (x.amount!=null?Number(x.amount).toFixed(2):""),x.score,
+      (x.flags||[]).join("; "),DATA.source||"",x.clerk_url];
+  });
+  const enc=v=>{v=(v==null?"":String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const csv=[GHL_COLUMNS.join(","),...rows.map(r=>r.map(enc).join(","))].join("\r\n");
+  const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="alameda_leads_ghl.csv"; a.click(); URL.revokeObjectURL(a.href);
+}
+
+$("#q").oninput=render;
+$("#cat").onchange=render;
+$("#ms").oninput=()=>{$("#msLabel").textContent=$("#ms").value;render();};
+$("#csv").onclick=toCSV;
+load();
+</script>
+</body>
+</html>

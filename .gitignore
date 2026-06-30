@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+
+# Playwright
+playwright-report/
+test-results/
+.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local data scratch (committed copies live in data/ & dashboard/)
+*.dbf
+*.log
+scratch/

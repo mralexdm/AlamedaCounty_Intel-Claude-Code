@@ -1,0 +1,11 @@
+# NextKey lead scraper — Python dependencies
+#
+# After `pip install -r scraper/requirements.txt` you MUST also install the
+# browser binary:   python -m playwright install --with-deps chromium
+#
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=5.1.0
+playwright>=1.44.0
+dbfread>=2.0.7          # optional: only used if a bulk Assessor .dbf is supplied
+python-dateutil>=2.9.0 # tolerant date parsing (optional but recommended)

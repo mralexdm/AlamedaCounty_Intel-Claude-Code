@@ -1,0 +1,12 @@
+{
+  "fetched_at": null,
+  "source": "Alameda County Clerk-Recorder (Aumentum Public Access) + ArcGIS Parcels",
+  "date_range": {
+    "from": null,
+    "to": null,
+    "lookback_days": 7
+  },
+  "total": 0,
+  "with_address": 0,
+  "records": []
+}

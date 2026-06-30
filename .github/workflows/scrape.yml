@@ -1,0 +1,104 @@
+name: Scrape Alameda County leads
+
+# Runs daily at 07:00 UTC (00:00 PT / 23:00 PT depending on DST) and on demand.
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: "Days to look back"
+        required: false
+        default: "7"
+      cats:
+        description: "Comma-separated category codes (blank = all)"
+        required: false
+        default: ""
+
+# Allow committing results AND deploying to GitHub Pages.
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Never run two scrapes/deploys at once.
+concurrency:
+  group: "alameda-scrape"
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so the rebase-before-push works
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml dbfread playwright python-dateutil
+
+      - name: Install Playwright Chromium (+ system deps)
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run scraper
+        env:
+          LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '7' }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.lookback_days }}" ]; then
+            ARGS="$ARGS --lookback-days ${{ github.event.inputs.lookback_days }}"
+          fi
+          if [ -n "${{ github.event.inputs.cats }}" ]; then
+            ARGS="$ARGS --cats ${{ github.event.inputs.cats }}"
+          fi
+          echo "Running: python src/fetch.py $ARGS"
+          python src/fetch.py $ARGS
+        # Don't fail the whole job if the portal is briefly unavailable;
+        # the scraper already writes empty/partial output and logs the stage.
+        continue-on-error: true
+
+      - name: Commit & push results
+        # A push failure (e.g. an out-of-band commit) must not skip the Pages
+        # deploy — the artifact is uploaded from the working tree regardless.
+        continue-on-error: true
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard/records.json data/records.json \
+                  dashboard/leads_ghl.csv data/leads_ghl.csv 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: refresh Alameda leads ($(date -u +%Y-%m-%dT%H:%MZ))"
+            # Rebase onto any out-of-band commits, then push; retry to absorb races.
+            for i in 1 2 3; do
+              git pull --rebase --autostash origin "${GITHUB_REF_NAME}" \
+                && git push && { echo "pushed"; break; }
+              echo "push attempt $i failed; retrying..."; sleep 3
+            done
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard
+
+  deploy:
+    needs: scrape
+    runs-on: ubuntu-22.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
