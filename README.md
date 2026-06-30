@@ -1,4 +1,4 @@
-# NextKey — Alameda County Motivated Seller Lead Scraper
+Alameda County Motivated Seller Lead Scraper
 
 Automated daily pull of newly recorded **distress documents** (lis pendens,
 foreclosure notices, judgments, tax / mechanic / HOA liens, probate, etc.) from
