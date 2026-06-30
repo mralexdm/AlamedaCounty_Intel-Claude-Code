@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
-Alameda County Motivated Seller Lead Scraper
-=======
-# MADM — Alameda County Motivated Seller Lead Scraper
->>>>>>> Stashed changes
+# MADM - Alameda County Motivated Seller Lead Scraper
 
 Automated daily pull of newly recorded **distress documents** (lis pendens,
 foreclosure notices, judgments, tax / mechanic / HOA liens, probate, etc.) from
