@@ -14,6 +14,15 @@ on:
         description: "Comma-separated category codes (blank = all)"
         required: false
         default: ""
+  # Redeploy the dashboard to Pages when the page or this workflow changes.
+  # Path-filtered so the bot's data commits (records.json / leads_ghl.csv) do
+  # NOT retrigger — which would otherwise cause an infinite loop. On a push the
+  # heavy scrape steps are skipped (see `if:` below); it's a fast deploy-only run.
+  push:
+    branches: [main]
+    paths:
+      - "dashboard/index.html"
+      - ".github/workflows/scrape.yml"
 
 # Allow committing results AND deploying to GitHub Pages.
 permissions:
@@ -36,20 +45,24 @@ jobs:
           fetch-depth: 0   # full history so the rebase-before-push works
 
       - name: Set up Python
+        if: github.event_name != 'push'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
       - name: Install Python dependencies
+        if: github.event_name != 'push'
         run: |
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 lxml dbfread playwright python-dateutil
 
       - name: Install Playwright Chromium (+ system deps)
+        if: github.event_name != 'push'
         run: python -m playwright install --with-deps chromium
 
       - name: Run scraper
+        if: github.event_name != 'push'
         env:
           LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '7' }}
         run: |
@@ -67,6 +80,7 @@ jobs:
         continue-on-error: true
 
       - name: Commit & push results
+        if: github.event_name != 'push'
         # A push failure (e.g. an out-of-band commit) must not skip the Pages
         # deploy — the artifact is uploaded from the working tree regardless.
         continue-on-error: true
@@ -87,6 +101,8 @@ jobs:
             done
           fi
 
+      # Always upload the current dashboard/ (incl. committed records.json) so a
+      # push-only run still publishes the latest page + data.
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
