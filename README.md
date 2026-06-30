@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 Alameda County Motivated Seller Lead Scraper
+=======
+# MADM — Alameda County Motivated Seller Lead Scraper
+>>>>>>> Stashed changes
 
 Automated daily pull of newly recorded **distress documents** (lis pendens,
 foreclosure notices, judgments, tax / mechanic / HOA liens, probate, etc.) from
@@ -7,8 +11,8 @@ addresses from the **County ArcGIS parcel layer**, scored as motivated-seller
 leads, and published to a static dashboard + a Go High Level (GHL) CSV.
 
 ```
-src/fetch.py            ← the scraper (Playwright + requests/BeautifulSoup)
-src/requirements.txt    ← Python deps
+scraper/fetch.py            ← the scraper (Playwright + requests/BeautifulSoup)
+scraper/requirements.txt    ← Python deps
 dashboard/index.html        ← static lead dashboard (GitHub Pages)
 dashboard/records.json      ← machine-readable output (also data/records.json)
 dashboard/leads_ghl.csv     ← GHL import (also data/leads_ghl.csv)
@@ -18,14 +22,14 @@ dashboard/leads_ghl.csv     ← GHL import (also data/leads_ghl.csv)
 ## Quick start (local)
 
 ```bash
-cd "nextkey-lead-scraper (Claude)"
+cd AlamedaCounty_Intel-Claude-Code
 python -m venv .venv && . .venv/Scripts/activate      # Windows
 # source .venv/bin/activate                            # macOS/Linux
 
-pip install -r src/requirements.txt
+pip install -r scraper/requirements.txt
 python -m playwright install --with-deps chromium
 
-python src/fetch.py --headed           # watch it work the first time
+python scraper/fetch.py --headed           # watch it work the first time
 ```
 
 Open `dashboard/index.html` in a browser (or serve the folder) to view leads.
@@ -122,7 +126,7 @@ of leads to have no enriched address until an owner index is wired in. The
 - Runs daily at **07:00 UTC** (`schedule`) and on demand (`workflow_dispatch`,
   with optional `lookback_days` / `cats` inputs).
 - Installs deps + `playwright install --with-deps chromium`.
-- Runs `python src/fetch.py`.
+- Runs `python scraper/fetch.py`.
 - Commits the refreshed `records.json` / `leads_ghl.csv` files.
 - Deploys `dashboard/` to **GitHub Pages**.
 

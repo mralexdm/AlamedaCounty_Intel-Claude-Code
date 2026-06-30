@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-NextKey Motivated-Seller Lead Scraper — Alameda County, California
+MADM Motivated-Seller Lead Scraper — Alameda County, California
 ==================================================================
 
 Pulls newly recorded "distress" documents (lis pendens, foreclosure notices,
@@ -328,7 +328,7 @@ CATEGORY_BY_CODE: Dict[str, Category] = {c.code: c for c in CATEGORIES}
 #  Logging                                                                      #
 # ============================================================================ #
 
-logger = logging.getLogger("nextkey")
+logger = logging.getLogger("madm")
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -1832,7 +1832,7 @@ async def run_pipeline(args: argparse.Namespace) -> Dict[str, Any]:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="NextKey motivated-seller lead scraper (Alameda County, CA).")
+        description="MADM motivated-seller lead scraper (Alameda County, CA).")
     p.add_argument("--lookback-days", type=int, default=DEFAULT_LOOKBACK_DAYS,
                    help=f"days to look back (default {DEFAULT_LOOKBACK_DAYS})")
     p.add_argument("--cats", type=str, default=None,
@@ -1855,7 +1855,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_arg_parser().parse_args(argv)
     setup_logging(verbose=args.verbose)
-    log_stage(Stage.INIT, "NextKey lead scraper starting")
+    log_stage(Stage.INIT, "MADM lead scraper starting")
     try:
         asyncio.run(run_pipeline(args))
         return 0

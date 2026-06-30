@@ -1,4 +1,4 @@
-# NextKey lead scraper — Python dependencies
+# MADM lead scraper — Python dependencies
 #
 # After `pip install -r scraper/requirements.txt` you MUST also install the
 # browser binary:   python -m playwright install --with-deps chromium
