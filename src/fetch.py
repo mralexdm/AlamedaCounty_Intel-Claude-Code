@@ -614,6 +614,7 @@ def blank_record() -> Dict[str, Any]:
         "owner": "", "grantee": "", "amount": None, "legal": "",
         "prop_address": "", "prop_city": "", "prop_state": "", "prop_zip": "",
         "mail_address": "", "mail_city": "", "mail_state": "", "mail_zip": "",
+        "phone": "", "email": "",   # blank until skip-tracing fills them
         "clerk_url": "", "flags": [], "score": 0,
         # internal bookkeeping (stripped before output)
         "_cats": set(), "_apn": "", "_global_id": "",
@@ -1684,12 +1685,16 @@ def write_json(payload: Dict[str, Any], paths: Sequence[Path]) -> None:
 
 
 GHL_COLUMNS = [
-    "First Name", "Last Name", "Mailing Address", "Mailing City",
-    "Mailing State", "Mailing Zip", "Property Address", "Property City",
-    "Property State", "Property Zip", "Lead Type", "Document Type",
-    "Date Filed", "Document Number", "Amount/Debt Owed", "Seller Score",
-    "Motivated Seller Flags", "Source", "Public Records URL",
+    "First Name", "Last Name", "Phone", "Email",
+    "Mailing Address", "Mailing City", "Mailing State", "Mailing Zip",
+    "Property Address", "Property City", "Property State", "Property Zip",
+    "Lead Type", "Document Type", "Date Filed", "Document Number",
+    "Amount/Debt Owed", "Seller Score", "Motivated Seller Flags",
+    "Source", "Public Records URL",
 ]
+# Phone/Email are intentionally blank here — public records never contain them.
+# Populate via skip tracing (BatchSkipTracing / PropStream / REISkip) using the
+# name + mailing address, then re-import. GHL maps the "Phone"/"Email" headers.
 
 
 def export_ghl_csv(records: List[Dict[str, Any]], paths: Sequence[Path]) -> None:
@@ -1699,6 +1704,7 @@ def export_ghl_csv(records: List[Dict[str, Any]], paths: Sequence[Path]) -> None
         amount = rec.get("amount")
         rows.append([
             first, last,
+            rec.get("phone", ""), rec.get("email", ""),
             rec.get("mail_address", ""), rec.get("mail_city", ""),
             rec.get("mail_state", ""), rec.get("mail_zip", ""),
             rec.get("prop_address", ""), rec.get("prop_city", ""),

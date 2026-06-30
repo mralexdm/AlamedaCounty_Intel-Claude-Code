@@ -88,7 +88,7 @@
 <footer id="foot"></footer>
 
 <script>
-const GHL_COLUMNS = ["First Name","Last Name","Mailing Address","Mailing City",
+const GHL_COLUMNS = ["First Name","Last Name","Phone","Email","Mailing Address","Mailing City",
   "Mailing State","Mailing Zip","Property Address","Property City","Property State",
   "Property Zip","Lead Type","Document Type","Date Filed","Document Number",
   "Amount/Debt Owed","Seller Score","Motivated Seller Flags","Source","Public Records URL"];
@@ -211,7 +211,7 @@ function render(){
 function toCSV(){
   const rows=filtered().map(x=>{
     const [fn,ln]=splitName(x.owner);
-    return [fn,ln,x.mail_address,x.mail_city,x.mail_state,x.mail_zip,
+    return [fn,ln,x.phone||"",x.email||"",x.mail_address,x.mail_city,x.mail_state,x.mail_zip,
       x.prop_address,x.prop_city,x.prop_state,x.prop_zip,
       x.cat_label||x.cat,x.doc_type,x.filed,x.doc_num,
       (x.amount!=null?Number(x.amount).toFixed(2):""),x.score,
