@@ -1,9 +1,9 @@
 {
-  "fetched_at": "2026-08-02T09:12:12.129398+00:00",
+  "fetched_at": "2026-08-03T10:45:51.326170+00:00",
   "source": "Alameda County Clerk-Recorder (Aumentum Public Access) + ArcGIS Parcels",
   "date_range": {
-    "from": "2026-07-26",
-    "to": "2026-08-02",
+    "from": "2026-07-27",
+    "to": "2026-08-03",
     "lookback_days": 7
   },
   "total": 1114,
@@ -31,8 +31,8 @@
       "email": "",
       "clerk_url": "https://rechart1.acgov.org/RealEstate/SearchEntry.aspx?e=newSession",
       "flags": [
-        "Judgment lien",
         "Pre-foreclosure",
+        "Judgment lien",
         "LLC / corp owner",
         "New this week"
       ],
