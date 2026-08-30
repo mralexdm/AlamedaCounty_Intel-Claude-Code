@@ -1,9 +1,9 @@
 {
-  "fetched_at": "2026-08-29T07:14:53.044957+00:00",
+  "fetched_at": "2026-08-30T07:15:44.509587+00:00",
   "source": "Alameda County Clerk-Recorder (Aumentum Public Access) + ArcGIS Parcels",
   "date_range": {
-    "from": "2026-08-22",
-    "to": "2026-08-29",
+    "from": "2026-08-23",
+    "to": "2026-08-30",
     "lookback_days": 7
   },
   "total": 1163,
